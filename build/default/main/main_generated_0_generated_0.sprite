@@ -1,0 +1,4 @@
+tile_set: "/main/logo.atlas"
+default_animation: "logo"
+material: "/builtins/materials/sprite.material"
+blend_mode: BLEND_MODE_ALPHA
