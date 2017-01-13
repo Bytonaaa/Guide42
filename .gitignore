@@ -1,3 +1,16 @@
+<<<<<<< HEAD
+
+.externalToolBuilders
+.DS_Store
+.lock-wscript
+build
+*.pyc
+.project
+.cproject
+builtins
+.internal
+========
+
 # Windows image file caches
 Thumbs.db
 ehthumbs.db
