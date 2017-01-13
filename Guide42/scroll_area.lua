@@ -129,10 +129,9 @@ local function update_node(self, i)
 	if is_node_on_screen(self, pos) then
 		if (self.objects[i].clone == nil) then
 			self.objects[i].clone = get_clone_node(self)
-			gui.set_position(self.objects[i].clone[self.clone_name], get_node_position(self, i))
 			self.bind(self.objects[i].clone, self.objects[i].data)
-
 		end
+		gui.set_position(self.objects[i].clone[self.clone_name], get_node_position(self, i))
 	else
 		if (self.objects[i].clone ~= nil) then
 			add_clone_node(self, self.objects[i].clone)
@@ -183,11 +182,9 @@ function scope.init(id, settings)
 		clip_plane = util.safe_get_node(id..'/clip_plane'),
 		objects_plane = util.safe_get_node(id..'/objects_plane'),
 		
-		
-		clone = util.safe_get_node(settings.clone_name),
-		
-		
 		vertical = not settings.horizontal,
+		
+		clone_name = settings.clone_name or "guide42_scroll",
 		
 		between = settings.between or 150,
 		padding_horizontal = settings.padding_horizontal or 50,
@@ -204,13 +201,13 @@ function scope.init(id, settings)
 		value = nil,
 		objects = { },
 		nodes = { },
-		clone_name = settings.clone_name or "guide42_scroll",
+		
 		bind = settings.bind
 		
 	}
 	
 	
-	
+	obj.clone = util.safe_get_node(obj.clone_name)
 	obj.object_size = gui.get_size(obj.clone),
 	gui.set_enabled(obj.clone, false)
 	
@@ -299,16 +296,16 @@ function meta:input(action_id, action)
 		end
 		
 		if (self.touched) then
-			if (math.abs(((self.vertical and action.screen_dy) or action.screen_dx)) > self.touch_speed_border) then
+			if (math.abs(((self.vertical and action.dy) or action.dx)) > self.touch_speed_border) then
 				self.moved = true
-				self.speed = self.speed + ((self.vertical and action.screen_dy) or action.screen_dx) * self.touch_acceleration
+				self.speed = self.speed + ((self.vertical and action.dy) or action.dx) * self.touch_acceleration
 				if (self.max_speed and math.abs(self.speed) > self.max_speed) then
 					self.speed = self.max_speed * sign(self.speed)
 				end
 			end
 		end
 		
-		if (action.pressed and util.hit_node(self.clip_plane, action.screen_x, action.screen_y)) then
+		if (action.pressed and util.hit_node(self.clip_plane, action.x, action.y)) then
 			self.touched = true
 			return { pressed = true, touched = true }
 		end
@@ -350,29 +347,20 @@ function meta:add_node(data, pos)
 	update_plane(self)
 end
 
-function meta:delete_node(i)
-	for key, val in pairs(self.objects[i].clone) do
-		gui.delete_node(val)
+function meta:remove_node(i)
+	if (self.objects[i].clone ~= nil) then
+		add_clone_node(self, self.objects[i].clone)
 	end
 	
 	table.remove(self.objects, i)
 	
-	
-	for key, val in ipairs(self.objects) do
-		gui.set_position(val.clone[self.clone_name], get_node_position(self, key))
-	end
 	
 	update_plane(self)
 end
 
 
 function meta:remove_all()
-	for _, node in ipairs(self.objects) do
-		for key, val in pairs(node.clone) do
-			gui.delete_node(val)
-		end
-	end
-	
+
 	self.objects = { }
 	self.nodes = { }
 	
