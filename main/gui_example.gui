@@ -1,4 +1,8 @@
 script: "/main/gui_example.gui_script"
+textures {
+  name: "dark_ui"
+  texture: "/dark_ui_export/dark_ui.atlas"
+}
 background_color {
   x: 0.0
   y: 0.0
@@ -7,8 +11,62 @@ background_color {
 }
 nodes {
   position {
-    x: 622.68414
-    y: 583.3749
+    x: 640.0
+    y: 381.23645
+    z: 0.0
+    w: 1.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+    w: 1.0
+  }
+  size {
+    x: 1200.0
+    y: 600.0
+    z: 0.0
+    w: 1.0
+  }
+  color {
+    x: 0.75294125
+    y: 0.75294125
+    z: 0.75294125
+    w: 1.0
+  }
+  type: TYPE_BOX
+  blend_mode: BLEND_MODE_ALPHA
+  texture: "dark_ui/button_normal"
+  id: "background"
+  xanchor: XANCHOR_NONE
+  yanchor: YANCHOR_NONE
+  pivot: PIVOT_CENTER
+  adjust_mode: ADJUST_MODE_FIT
+  layer: ""
+  inherit_alpha: true
+  slice9 {
+    x: 20.0
+    y: 20.0
+    z: 20.0
+    w: 20.0
+  }
+  clipping_mode: CLIPPING_MODE_NONE
+  clipping_visible: true
+  clipping_inverted: false
+  alpha: 0.5
+  template_node_child: false
+  size_mode: SIZE_MODE_MANUAL
+}
+nodes {
+  position {
+    x: 305.77087
+    y: 609.5121
     z: 0.0
     w: 1.0
   }
@@ -38,7 +96,7 @@ nodes {
   }
   type: TYPE_BOX
   blend_mode: BLEND_MODE_ALPHA
-  texture: ""
+  texture: "dark_ui/radio_normal"
   id: "box"
   xanchor: XANCHOR_NONE
   yanchor: YANCHOR_NONE
@@ -47,10 +105,10 @@ nodes {
   layer: ""
   inherit_alpha: false
   slice9 {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 0.0
+    x: 10.0
+    y: 10.0
+    z: 10.0
+    w: 10.0
   }
   clipping_mode: CLIPPING_MODE_NONE
   clipping_visible: true
@@ -62,7 +120,7 @@ nodes {
 nodes {
   position {
     x: 219.11917
-    y: 262.75995
+    y: 214.27054
     z: 0.0
     w: 1.0
   }
@@ -109,8 +167,8 @@ nodes {
 }
 nodes {
   position {
-    x: 401.6486
-    y: 293.53815
+    x: 375.22928
+    y: 83.111336
     z: 0.0
     w: 1.0
   }
@@ -128,7 +186,7 @@ nodes {
   }
   size {
     x: 500.0
-    y: 500.0
+    y: 400.0
     z: 0.0
     w: 1.0
   }
@@ -140,7 +198,7 @@ nodes {
   }
   type: TYPE_BOX
   blend_mode: BLEND_MODE_ALPHA
-  texture: ""
+  texture: "dark_ui/button_normal"
   id: "scroll_area/clip_plane"
   xanchor: XANCHOR_NONE
   yanchor: YANCHOR_NONE
@@ -150,24 +208,25 @@ nodes {
   layer: ""
   inherit_alpha: false
   slice9 {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 0.0
+    x: 10.0
+    y: 10.0
+    z: 10.0
+    w: 10.0
   }
   clipping_mode: CLIPPING_MODE_STENCIL
-  clipping_visible: false
+  clipping_visible: true
   clipping_inverted: false
   alpha: 1.0
   overridden_fields: 1
   overridden_fields: 4
+  overridden_fields: 9
   template_node_child: true
   size_mode: SIZE_MODE_MANUAL
 }
 nodes {
   position {
-    x: 22.344473
-    y: 60.649284
+    x: 102.38958
+    y: -81.36145
     z: 0.0
     w: 1.0
   }
@@ -197,20 +256,20 @@ nodes {
   }
   type: TYPE_BOX
   blend_mode: BLEND_MODE_ALPHA
-  texture: ""
+  texture: "dark_ui/button_normal"
   id: "scroll_area/objects_plane"
   xanchor: XANCHOR_NONE
   yanchor: YANCHOR_NONE
-  pivot: PIVOT_N
+  pivot: PIVOT_S
   adjust_mode: ADJUST_MODE_FIT
   parent: "scroll_area/clip_plane"
   layer: ""
   inherit_alpha: false
   slice9 {
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    w: 0.0
+    x: 10.0
+    y: 10.0
+    z: 10.0
+    w: 10.0
   }
   clipping_mode: CLIPPING_MODE_NONE
   clipping_visible: true
@@ -219,7 +278,9 @@ nodes {
   overridden_fields: 1
   overridden_fields: 4
   overridden_fields: 5
+  overridden_fields: 9
   overridden_fields: 14
+  overridden_fields: 22
   overridden_fields: 30
   template_node_child: true
   size_mode: SIZE_MODE_MANUAL

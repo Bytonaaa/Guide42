@@ -2,6 +2,7 @@ local scope = { }
 local util = require "Guide42.util"
 local vars = require "Guide42.guide42_variables"
 local meta = { }
+
 meta.__index = meta
 
 local function sign (x)
@@ -16,7 +17,19 @@ local function clamp (x, min, max)
 end
 
 local function is_entry(x, min, max)
-	return x <= min or x >= max
+	return (x >= min and x <= max)
+end
+
+local function is_node_on_screen(self, pos)
+	if (self.vertical) then
+		local left, right = pos - self.object_size.y / 2 + self.position.y, pos + self.object_size.y / 2 + self.position.y
+		local temp = gui.get_size(self.clip_plane)
+		return is_entry(left, -temp.y / 2, temp.y / 2) or is_entry(right, -temp.y / 2, temp.y / 2)
+	else 
+		local left, right = pos - self.object_size.x / 2 + self.position.x, pos + self.object_size.x / 2 + self.position.x
+		local temp = gui.get_size(self.clip_plane)
+		return is_entry(left, -temp.x / 2, temp.x / 2) or is_entry(right, -temp.x / 2, temp.x / 2) 
+	end
 end
 
 local function set_plane_position(self)
@@ -57,12 +70,12 @@ local function set_value(self)
 	end
 	
 	if self.vertical then
-		return 1 + (math.abs(self.position.y) - self.object_size.y * 0.5 - self.padding_vertical) / (self.object_size.y + self.between)
+		self.value = 1 + (math.abs(self.position.y) - self.object_size.y * 0.5 - self.padding_vertical) / (self.object_size.y + self.between)
+	else	
+		self.value = 1 + (math.abs(self.position.x) - self.object_size.x * 0.5 - self.padding_horizontal) / (self.object_size.x + self.between)
 	end
-	
-	self.value = 1 + (math.abs(self.position.x) - self.object_size.x * 0.5 - self.padding_horizontal) / (self.object_size.x + self.between)
-	
 end
+
 
 
 local function get_node_position(self, num)
@@ -87,20 +100,92 @@ local function set_plane_size(self)
 	gui.set_size(self.objects_plane, size)
 end
 
+
+local function get_clone_node(self)
+	local clone
+	if (#self.nodes == 0) then
+		clone = gui.clone_tree(self.clone)
+		gui.set_parent(clone[self.clone_name], self.objects_plane)
+	else
+		clone = table.remove(self.nodes)
+	end
+	gui.set_enabled(clone[self.clone_name], true)
+	return clone
+end
+
+local function add_clone_node(self, clone)
+	gui.set_enabled(clone[self.clone_name], false)
+	table.insert(self.nodes, clone)
+end
+
+local function update_node(self, i)
+	local pos = get_node_position(self, i)
+	if (self.vertical) then
+		pos = pos.y
+	else
+		pos = pos.x
+	end
+	
+	if is_node_on_screen(self, pos) then
+		if (self.objects[i].clone == nil) then
+			self.objects[i].clone = get_clone_node(self)
+			gui.set_position(self.objects[i].clone[self.clone_name], get_node_position(self, i))
+			self.bind(self.objects[i].clone, self.objects[i].data)
+
+		end
+	else
+		if (self.objects[i].clone ~= nil) then
+			add_clone_node(self, self.objects[i].clone)
+			self.objects[i].clone = nil
+		else
+			return true
+		end
+	end
+end
+
+local function update_nodes_visiable(self)
+	if (#self.objects == 0) then
+		return
+	end
+	
+	local i = math.floor(self.value) - 1
+	
+	while (i > 0) do
+		if (update_node(self, i)) then
+			break
+		end
+		i = i - 1
+	end
+	
+	i = math.floor(self.value)
+	while (i <= #self.objects) do
+		if (update_node(self, i)) then
+			break
+		end
+		i = i + 1
+	end
+end
+
+
 local function update_plane(self)
 	set_plane_size(self)
-	set_plane_position(self)
+	if (not set_plane_position(self)) then
+		self:stop()
+	end
 	set_value(self)
+	update_nodes_visiable(self)
 end
+
 
 
 function scope.init(id, settings)
 	local obj = { 
 		clip_plane = util.safe_get_node(id..'/clip_plane'),
 		objects_plane = util.safe_get_node(id..'/objects_plane'),
-		object_size = gui.get_size(settings.clone),
 		
-		clone = settings.clone,
+		
+		clone = util.safe_get_node(settings.clone_name),
+		
 		
 		vertical = not settings.horizontal,
 		
@@ -119,24 +204,36 @@ function scope.init(id, settings)
 		value = nil,
 		objects = { },
 		nodes = { },
-		nodes_on_screen = { },
 		clone_name = settings.clone_name or "guide42_scroll",
 		bind = settings.bind
 		
 	}
 	
-	obj.position = gui.get_position(obj.objects_plane)
-
 	
+	
+	obj.object_size = gui.get_size(obj.clone),
 	gui.set_enabled(obj.clone, false)
 	
 	
 	if (obj.vertical) then
 		gui.set_pivot(obj.objects_plane, gui.PIVOT_S)
+		local temp = gui.get_size(obj.clip_plane)
+		gui.set_size(obj.clip_plane, vmath.vector3(obj.object_size.x + 2 * obj.padding_horizontal, temp.y, 0))
+		temp = gui.get_size(obj.objects_plane)
+		gui.set_size(obj.objects_plane, vmath.vector3(obj.object_size.x + 2 * obj.padding_horizontal, temp.y, 0))
 	else
 		gui.set_pivot(obj.objects_plane, gui.PIVOT_W)
+		local temp = gui.get_size(obj.clip_plane)
+		gui.set_size(obj.clip_plane, vmath.vector3(temp.x, obj.object_size.y + 2 * obj.padding_vertical, 0))
+		temp = gui.get_size(obj.objects_plane)
+		gui.set_size(obj.objects_plane, vmath.vector3(temp.x, obj.object_size.y + 2 * obj.padding_vertical, 0))
 	end
 	
+	local temp = gui.get_position(obj.objects_plane)
+	temp.x = 0
+	temp.y = 0
+	obj.position = temp
+	gui.set_position(obj.objects_plane, temp) 
 	
 	setmetatable(obj, meta)
 	update_plane(obj)
@@ -147,13 +244,14 @@ end
 
 
 
+
+
 function meta:update(dt, on_change)
 	if (#self.objects == 0) then
 		return
 	end
 	
 	if (self.moved) then
-		
 		local temp = self.speed * dt  - self.acceleration_down * sign(self.speed) * dt * dt / 2	
 		
 		if (self.vertical) then
@@ -162,17 +260,14 @@ function meta:update(dt, on_change)
 			self.position.x = self.position.x + temp		
 		end
 		
-		set_plane_position(self)
-		
-		if (set_plane_position(self)) then
+		if (not set_plane_position(self)) then
 			self:stop()
 		end
-		
 		set_value(self) 
 		
+		
 		self.speed = self.speed - self.acceleration_down * dt * sign(self.speed)	
-		
-		
+
 		if on_change then
 			on_change(self.value)
 		end
@@ -180,6 +275,8 @@ function meta:update(dt, on_change)
 		if (math.abs(self.speed) < self.min_speed) then
 			self:stop()
 		end
+		
+		update_nodes_visiable(self)
 	end
 end
 
@@ -189,18 +286,16 @@ function meta:input(action_id, action)
 		if (action.released) then
 			if self.touched then
 				self.touched = false
-				if util.hit_node(self.clip_plane, action.screen_x, action.screen_y) then
-					for key, val in pairs(self.nodes_on_screen) do
-						if (util.hit_node(val[self.clone_name], action.screen_x, action.screen_y)) then
-							print ('Scroll touched, key:', key)
-							return { released = true, key = key}
+				if util.hit_node(self.clip_plane, action.x, action.y) then
+					for key, val in pairs(self.objects) do
+						if (val.clone and util.hit_node(val.clone[self.clone_name], action.x, action.y)) then
+							return { released = true, touched = true, key = key}
 						end
 					end
 				end
-				print ('Scroll touched', self.moved)
-				return { released = true}
+				return { released = true, touched = true}
 			end
-			return { }
+			return { touched = false }
 		end
 		
 		if (self.touched) then
@@ -215,8 +310,7 @@ function meta:input(action_id, action)
 		
 		if (action.pressed and util.hit_node(self.clip_plane, action.screen_x, action.screen_y)) then
 			self.touched = true
-			print ('Pressed on scroll')
-			return { pressed = true }
+			return { pressed = true, touched = true }
 		end
 		
 		return { touched = self.touched }
@@ -250,17 +344,8 @@ end
 
 
 function meta:add_node(data, pos)
-	local clone = gui.clone_tree(self.clone)
 	
-	self.bind(clone, data)
-	gui.set_parent(clone[self.clone_name], self.objects_plane)
-	gui.set_enabled(clone[self.clone_name], true)
-	gui.set_position(clone[self.clone_name], get_node_position(self, pos))
-	
-	
-	
-	table.insert(self.objects, (pos or (#self.objects + 1)), {clone = clone, data = node })
-	table.insert(self.nodes_on_screen, (pos or (#self.nodes_on_screen + 1)), clone)
+	table.insert(self.objects, (pos or (#self.objects + 1)), {clone = clone, data = data })
 	
 	update_plane(self)
 end
@@ -269,8 +354,8 @@ function meta:delete_node(i)
 	for key, val in pairs(self.objects[i].clone) do
 		gui.delete_node(val)
 	end
-	table.remove(self.objects, i)
 	
+	table.remove(self.objects, i)
 	
 	
 	for key, val in ipairs(self.objects) do
@@ -287,7 +372,9 @@ function meta:remove_all()
 			gui.delete_node(val)
 		end
 	end
+	
 	self.objects = { }
+	self.nodes = { }
 	
 	update_plane(self)
 end

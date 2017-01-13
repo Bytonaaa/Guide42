@@ -1,0 +1,39 @@
+images {
+  image: "/dark_ui_export/button_normal.png"
+}
+images {
+  image: "/dark_ui_export/button_pressed.png"
+}
+images {
+  image: "/dark_ui_export/checkbox_checked_normal.png"
+}
+images {
+  image: "/dark_ui_export/checkbox_checked_pressed.png"
+}
+images {
+  image: "/dark_ui_export/checkbox_normal.png"
+}
+images {
+  image: "/dark_ui_export/checkbox_pressed.png"
+}
+images {
+  image: "/dark_ui_export/input.png"
+}
+images {
+  image: "/builtins/graphics/particle_blob.png"
+}
+images {
+  image: "/dark_ui_export/radio_checked_normal.png"
+}
+images {
+  image: "/dark_ui_export/radio_checked_pressed.png"
+}
+images {
+  image: "/dark_ui_export/radio_normal.png"
+}
+images {
+  image: "/dark_ui_export/radio_pressed.png"
+}
+margin: 0
+extrude_borders: 0
+inner_padding: 0
