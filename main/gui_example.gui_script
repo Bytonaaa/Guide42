@@ -2,29 +2,36 @@ local scroll_lib = require "Guide42.scroll_area"
 local vars = require "Guide42.guide42_variables"
 
 local function bind(node, data)
-	gui.set_color(node['box'], vmath.vector3(math.random(), math.random(), math.random()))
+	gui.set_color(node['box'], vmath.vector3(data))
 end
 
 function init(self)
-	math.randomseed(os.time())
 	msg.post(".", "acquire_input_focus")
 	
+	--Create a settings for scroll area
     local settings = { 
     	clone_name = 'box',
     	bind = bind,
     	horizontal = true
     }
     
+    --Create scroll
     self.scroll = scroll_lib.init("scroll_area", settings)
     
-    for i = 1, 10000 do
-    	self.scroll:add_node(i)
+    local n = 100
+    for i = 1, n do
+    	--Add n nodes to scroll
+    	self.scroll:add_node(1 - i/n)
     end
+    
+    --Add a node in 1 position
+    self.scroll:add_node(0, 1)
 end
 
 function update(self, dt)
     self.scroll:update(dt,
     	function(value)
+    		--Get a scroll position [1, n]
     		--print(value)
     	end
     )
@@ -33,8 +40,10 @@ end
 
 function on_input(self, action_id, action)
     if action_id == hash("click") then
+    	--Get touch information about touch
     	local inp = self.scroll:input(vars.touch, action)
     	if (inp.key) then
+    		--Delete node inp.key, if it touched
     		self.scroll:remove_node(inp.key)
     	end
     end
