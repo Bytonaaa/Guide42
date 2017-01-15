@@ -91,6 +91,9 @@ function on_input(self, action_id, action)
     	
     	if (not inp.touched) then
     		inp = self.scroll_area_dynamic:input(vars.touch, action)
+    		if (inp.key) then
+    			self.scroll_area_dynamic:remove_node(inp.key)
+    		end
     	end
     	
     	if (not inp.touched and action.released) then
