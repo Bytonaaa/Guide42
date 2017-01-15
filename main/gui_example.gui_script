@@ -2,11 +2,21 @@ local scroll_lib = require "Guide42.scroll_area"
 local vars = require "Guide42.guide42_variables"
 
 local function bind(node, data)
-	gui.set_color(node['box'], vmath.vector3(data))
+	gui.set_color(node['box'], vmath.vector3(data.color))
 end
 
-function init(self)
+local function bind_dynamic(node, data)
+	gui.set_color(node['box'], data.color)
+end
+
+function init(self)	
+	math.randomseed(os.time())
 	msg.post(".", "acquire_input_focus")
+	
+	self.add = gui.get_node("add")
+	self.remove = gui.get_node("remove")
+	self.remove_all = gui.get_node("remove_all")
+	self.stop = gui.get_node("stop")
 	
 	--Create a settings for scroll area
     local settings = { 
@@ -15,17 +25,46 @@ function init(self)
     	horizontal = true
     }
     
+    
     --Create scroll
     self.scroll = scroll_lib.init("scroll_area", settings)
     
-    local n = 100
+    settings = {
+    	clone_name = 'box',
+    	bind = bind,
+    	horizontal = false
+    }
+    
+    self.scroll_vertical = scroll_lib.init("scroll_area_vertical", settings)
+    
+    settings = { 
+    	clone_name = 'box',
+    	bind = bind_dynamic,
+    	horizontal = true,
+    	padding_vertical = 5,
+    	padding_horizontal = 25,
+    	margin_vertical = 10,
+    	margin_horizontal = 10,
+    	between = 25,
+    	
+    	acceleration_down = 350
+    }
+    
+   	self.scroll_area_dynamic = scroll_lib.init('scroll_area_dynamic', settings)
+    
+    
+    local n = 10
     for i = 1, n do
-    	--Add n nodes to scroll
-    	self.scroll:add_node(1 - i/n)
+    	--Add n nodes to scroll with data
+    	self.scroll:add_node({ color = 1 - i/n })
+    	self.scroll_vertical:add_node({color = 0})
+    	self.scroll_area_dynamic:add_node( { color = vmath.vector3(math.random(), math.random(), math.random()) })
     end
     
+    
+    
     --Add a node in 1 position
-    self.scroll:add_node(0, 1)
+    self.scroll:add_node({ color = 0 }, 1)
 end
 
 function update(self, dt)
@@ -35,6 +74,10 @@ function update(self, dt)
     		--print(value)
     	end
     )
+    
+    self.scroll_vertical:update(dt)
+    
+    self.scroll_area_dynamic:update(dt)
 end
 
 
@@ -42,9 +85,27 @@ function on_input(self, action_id, action)
     if action_id == hash("click") then
     	--Get touch information about touch
     	local inp = self.scroll:input(vars.touch, action)
-    	if (inp.key) then
-    		--Delete node inp.key, if it touched
-    		self.scroll:remove_node(inp.key)
+    	if (not inp.touched) then
+    		inp = self.scroll_vertical:input(vars.touch, action)
+    	end
+    	
+    	if (not inp.touched) then
+    		inp = self.scroll_area_dynamic:input(vars.touch, action)
+    	end
+    	
+    	if (not inp.touched and action.released) then
+    	
+    		if (gui.pick_node(self.add, action.x, action.y)) then
+    			self.scroll_area_dynamic:add_node({ color = vmath.vector3(math.random(), math.random(), math.random()) })
+    		elseif (gui.pick_node(self.remove, action.x, action.y)) then
+    			if (self.scroll_area_dynamic:get_size() > 0) then
+    				self.scroll_area_dynamic:remove_node(self.scroll_area_dynamic:get_size())
+    			end
+    		elseif (gui.pick_node(self.remove_all, action.x, action.y)) then
+    			self.scroll_area_dynamic:remove_all()
+    		elseif (gui.pick_node(self.stop, action.x, action.y)) then
+    			self.scroll_area_dynamic:stop()
+    		end
     	end
     end
 end

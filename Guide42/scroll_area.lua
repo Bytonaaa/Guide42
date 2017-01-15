@@ -12,6 +12,16 @@ local function sign (x)
 	return -1
 end
 
+local function round(x)
+	local a, b = math.modf(math.abs(x))
+	
+	if (b > 0.5) then
+		a = a + 1
+	end
+	
+	return a * sign(x)
+end
+
 local function clamp (x, min, max)
 	return math.max(min, math.min(x, max))
 end
@@ -66,7 +76,8 @@ end
 
 local function set_value(self)
 	if #self.objects == 0 then
-		return nil
+		self.value = nil
+		return
 	end
 	
 	if self.vertical then
@@ -147,7 +158,7 @@ local function update_nodes_visiable(self)
 		return
 	end
 	
-	local i = math.floor(self.value) - 1
+	local i = round(self.value) - 1
 	
 	while (i > 0) do
 		if (update_node(self, i)) then
@@ -156,7 +167,7 @@ local function update_nodes_visiable(self)
 		i = i - 1
 	end
 	
-	i = math.floor(self.value)
+	i = round(self.value)
 	while (i <= #self.objects) do
 		if (update_node(self, i)) then
 			break
@@ -179,6 +190,7 @@ end
 
 function scope.init(id, settings)
 	local obj = { 
+		main_plane = util.safe_get_node(id..'/main_plane'),
 		clip_plane = util.safe_get_node(id..'/clip_plane'),
 		objects_plane = util.safe_get_node(id..'/objects_plane'),
 		
@@ -189,6 +201,8 @@ function scope.init(id, settings)
 		between = settings.between or 150,
 		padding_horizontal = settings.padding_horizontal or 50,
 		padding_vertical = settings.padding_vertical or 50,
+		margin_horizontal = settings.margin_horizontal or 50,
+		margin_vertical = settings.margin_vertical or 50,
 		
 		touch_acceleration = settings.touch_acceleration or 1,
 		max_speed = settings.max_speed,
@@ -231,6 +245,12 @@ function scope.init(id, settings)
 	temp.y = 0
 	obj.position = temp
 	gui.set_position(obj.objects_plane, temp) 
+	gui.set_position(obj.clip_plane, temp)
+	
+	local size = gui.get_size(obj.clip_plane)
+	size.y = size.y + 2 * obj.margin_vertical
+	size.x = size.x + 2 * obj.margin_horizontal
+	gui.set_size(obj.main_plane, size)
 	
 	setmetatable(obj, meta)
 	update_plane(obj)
@@ -244,11 +264,13 @@ end
 
 
 function meta:update(dt, on_change)
+	
 	if (#self.objects == 0) then
 		return
 	end
 	
 	if (self.moved) then
+		
 		local temp = self.speed * dt  - self.acceleration_down * sign(self.speed) * dt * dt / 2	
 		
 		if (self.vertical) then
@@ -360,8 +382,22 @@ end
 
 
 function meta:remove_all()
-
+	for _, val in ipairs(self.objects) do
+		if val.clone then
+			for _, node in pairs(val.clone) do
+				gui.delete_node(node)
+			end
+		end
+	end
+	
 	self.objects = { }
+	
+	for _, val in ipairs(self.nodes) do
+		for _, node in pairs(val) do
+			gui.delete_node(node)
+		end
+	end
+	
 	self.nodes = { }
 	
 	update_plane(self)
