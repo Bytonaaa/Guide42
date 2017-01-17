@@ -1,6 +1,6 @@
 local vars = { }
 
-vars.touch = "touch"
+vars.touch = hash("touch")
 
 
 

@@ -22,10 +22,6 @@ local function round(x)
 	return a * sign(x)
 end
 
-local function clamp (x, min, max)
-	return math.max(min, math.min(x, max))
-end
-
 local function is_entry(x, min, max)
 	return (x >= min and x <= max)
 end
@@ -56,7 +52,7 @@ local function set_plane_position(self)
 			min = - self.padding_vertical - self.object_size.y * 0.5 - (self.object_size.y + self.between) * (#self.objects - 1)
 		end
 		temp = is_entry(self.position.y, min, max)
-		self.position.y = clamp(self.position.y, min, max)
+		self.position.y = util.clamp(self.position.y, min, max)
 	else
 		max = - self.object_size.x * 0.5 - self.padding_horizontal
 		
@@ -67,7 +63,7 @@ local function set_plane_position(self)
 			min = - self.padding_horizontal - self.object_size.x * 0.5 - (self.object_size.x + self.between) * (#self.objects - 1)
 		end
 		temp = is_entry(self.position.x, min, max)
-		self.position.x = clamp(self.position.x, min, max)
+		self.position.x = util.clamp(self.position.x, min, max)
 	end	
 	gui.set_position(self.objects_plane, self.position)
 	return temp
@@ -81,9 +77,9 @@ local function set_value(self)
 	end
 	
 	if self.vertical then
-		self.value = 1 + (math.abs(self.position.y) - self.object_size.y * 0.5 - self.padding_vertical) / (self.object_size.y + self.between)
+		self.value = 1 + ( -self.position.y - self.object_size.y * 0.5 - self.padding_vertical) / (self.object_size.y + self.between)
 	else	
-		self.value = 1 + (math.abs(self.position.x) - self.object_size.x * 0.5 - self.padding_horizontal) / (self.object_size.x + self.between)
+		self.value = 1 + ( -self.position.x - self.object_size.x * 0.5 - self.padding_horizontal) / (self.object_size.x + self.between)
 	end
 end
 
@@ -98,6 +94,13 @@ local function get_node_position(self, num)
 	return vmath.vector3((self.object_size.x + self.between) * (num) + self.object_size.x * 0.5 + self.padding_horizontal, 0, 0)
 end
 
+local function set_plane_position_from_value(self, value)
+	if self.vertical then
+		self.position.y = - ((self.value - 1) * (self.object_size.y + self.between) + self.object_size.y * 0.5 + self.padding_vertical)
+	else	
+		self.position.x = - ((self.value - 1) * (self.object_size.x + self.between) + self.object_size.x * 0.5 + self.padding_horizontal)
+	end
+end
 
 
 local function set_plane_size(self)
@@ -157,9 +160,7 @@ local function update_nodes_visiable(self)
 	if (#self.objects == 0) then
 		return
 	end
-	
 	local i = round(self.value) - 1
-	
 	while (i > 0) do
 		if (update_node(self, i)) then
 			break
@@ -173,6 +174,19 @@ local function update_nodes_visiable(self)
 			break
 		end
 		i = i + 1
+	end
+end
+
+local function make_nodes_invisiable(self)
+	if (#self.objects == 0) then
+		return
+	end
+	
+	for _, val in ipairs(self.objects) do
+		if (val.clone ~= nil) then
+			add_clone_node(self, val.clone)
+			val.clone = nil
+		end
 	end
 end
 
@@ -299,6 +313,20 @@ function meta:update(dt, on_change)
 	end
 end
 
+function meta:set_position(value)
+	if (#self.objects == 0) then
+		return
+	end
+	self:stop()
+	make_nodes_invisiable(self)
+
+	set_plane_position_from_value(self, value)
+	
+	set_plane_position(self)
+	self.value = value 
+		
+	update_nodes_visiable(self)
+end
 
 function meta:input(action_id, action)
 	if (action_id == vars.touch) then

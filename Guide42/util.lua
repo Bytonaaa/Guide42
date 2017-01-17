@@ -2,7 +2,7 @@ local util = { }
 local vars = require "Guide42.guide42_variables"
 
 
-function util.safe_is_enabled(node)
+function util.safe_is_enabled(node, steps)
 	local parent = gui.get_parent(node)
 	if gui.is_enabled(node) then
 		if parent then
@@ -27,6 +27,10 @@ end
 
 function util.hit_node(node, x, y)
 	return util.safe_is_enabled(node) and gui.pick_node(node, x, y)
+end
+
+function util.clamp(x, min, max)
+	return math.max(min, math.min(x, max))
 end
 
 
