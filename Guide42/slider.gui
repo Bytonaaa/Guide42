@@ -45,7 +45,7 @@ nodes {
   pivot: PIVOT_W
   adjust_mode: ADJUST_MODE_FIT
   layer: ""
-  inherit_alpha: true
+  inherit_alpha: false
   slice9 {
     x: 0.0
     y: 0.0
@@ -100,7 +100,7 @@ nodes {
   adjust_mode: ADJUST_MODE_FIT
   parent: "background"
   layer: ""
-  inherit_alpha: true
+  inherit_alpha: false
   slice9 {
     x: 0.0
     y: 0.0
@@ -155,7 +155,7 @@ nodes {
   adjust_mode: ADJUST_MODE_FIT
   parent: "slider"
   layer: ""
-  inherit_alpha: true
+  inherit_alpha: false
   slice9 {
     x: 0.0
     y: 0.0

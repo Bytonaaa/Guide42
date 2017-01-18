@@ -5,7 +5,19 @@ local meta = { }
 
 meta.__index = meta
 
-
+function set_state_elements(self)
+	local temp = gui.get_color(self.point_node)
+	temp.w = ((self.no_point and 0) or 1)
+	gui.set_color(self.point_node, temp)
+	
+	temp = gui.get_color(self.background_node)
+	temp.w = ((self.no_background and 0) or 1)
+	gui.set_color(self.background_node, temp)
+	
+	temp = gui.get_color(self.slider_node)
+	temp.w = ((self.no_slider and 0) or 1)
+	gui.set_color(self.slider_node, temp)
+end
 
 function scope.init (id, settings) 
 	local obj = { 
@@ -15,6 +27,7 @@ function scope.init (id, settings)
 		
 		no_point = settings.no_point,
 		no_background = settings.no_background,
+		no_slider = settings.no_slider,
 		
 		vertical = not settings.horizontal,
 		
@@ -32,13 +45,7 @@ function scope.init (id, settings)
 	
 	gui.set_position(obj.slider_node, vmath.vector3(0, 0, 0)) 
 	
-	if (obj.no_point) then
-		gui.set_enabled(obj.point_node, false)
-	end
-	
-	if (obj.no_background) then
-		gui.set_enabled(obj.background_node, false)
-	end
+	set_state_elements(obj)
 	
 	obj.max_size = gui.get_size(obj.background_node)
 	if (obj.vertical) then
@@ -57,6 +64,9 @@ function scope.init (id, settings)
 end
 
 function get_value(value, min, max)
+	if (min == max) then
+		return 1
+	end
 	return (value -  min) / (max - min)
 end
 
@@ -104,7 +114,22 @@ function meta:on_input(action_id, action)
 		
 		
 	end
-	
+end
+
+function meta:change_min_max(new_min, new_max)
+	self.min_value = new_min
+	self.max_value = new_max
+	self:set_value(self.value)
+end
+
+function meta:disable()
+	gui.set_enabled(self.point_node, false)
+	gui.set_enabled(self.background_node, false)
+	gui.set_enabled(self.slider_node, false)
+end
+
+function meta:enable()
+	set_state_elements(self)
 end
 
 
