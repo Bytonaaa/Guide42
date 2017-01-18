@@ -1,4 +1,5 @@
 local scroll_lib = require "Guide42.scroll_area"
+local slider_lib = require "Guide42.slider"
 local vars = require "Guide42.guide42_variables"
 
 local function bind(node, data)
@@ -47,7 +48,7 @@ function init(self)
     	margin_horizontal = 10,
     	between = 25,
     	
-    	acceleration_down = 350
+    	acceleration_down = 1
     }
     
    	self.scroll_area_dynamic = scroll_lib.init('scroll_area_dynamic', settings)
@@ -65,19 +66,37 @@ function init(self)
     
     --Add a node in 1 position
     self.scroll:add_node({ color = 0 }, 1)
+    
+    --SLIDER
+    settings = {
+    	moveable = true,
+    	min_value = 1,
+    	max_value = n
+    }
+    
+    self.slider = slider_lib.init("slider", settings)
+    
+    settings = { 
+    	horizontal = true,
+    	moveable = false,
+    	min_value = 1,
+    	max_value = n
+    }
+    self.dynamic_slider = slider_lib.init("dynamic_slider", settings)
 end
 
 function update(self, dt)
-    self.scroll:update(dt,
+    self.scroll:update(dt)
+    
+    self.scroll_vertical:update(dt, 
+  		function(value)
+    		self.slider:set_value(value) 
+    	end)
+    
+    self.scroll_area_dynamic:update(dt,
     	function(value)
-    		--Get a scroll position [1, n]
-    		--print(value)
-    	end
-    )
-    
-    self.scroll_vertical:update(dt)
-    
-    self.scroll_area_dynamic:update(dt)
+    		self.dynamic_slider:set_value(value)
+    	end)
 end
 
 
@@ -100,14 +119,24 @@ function on_input(self, action_id, action)
     	
     		if (gui.pick_node(self.add, action.x, action.y)) then
     			self.scroll_area_dynamic:add_node({ color = vmath.vector3(math.random(), math.random(), math.random()) })
+    			self.dynamic_slider:change_min_max(1, self.scroll_area_dynamic:get_size())
     		elseif (gui.pick_node(self.remove, action.x, action.y)) then
     			if (self.scroll_area_dynamic:get_size() > 0) then
     				self.scroll_area_dynamic:remove_node(self.scroll_area_dynamic:get_size())
+    				self.dynamic_slider:change_min_max((self.scroll_area_dynamic:get_size() > 0 and 1 or 0), self.scroll_area_dynamic:get_size())
     			end
     		elseif (gui.pick_node(self.remove_all, action.x, action.y)) then
     			self.scroll_area_dynamic:remove_all()
+    			self.dynamic_slider:change_min_max(0, 0)
     		elseif (gui.pick_node(self.stop, action.x, action.y)) then
     			self.scroll_area_dynamic:stop()
+    		end
+    	end
+    	
+    	if (not inp.touched) then
+    		inp = self.slider:on_input(vars.touch, action)
+    		if inp then
+    			self.scroll_vertical:set_position(inp.value)
     		end
     	end
     end

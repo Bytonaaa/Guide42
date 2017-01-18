@@ -22,10 +22,6 @@ local function round(x)
 	return a * sign(x)
 end
 
-local function clamp (x, min, max)
-	return math.max(min, math.min(x, max))
-end
-
 local function is_entry(x, min, max)
 	return (x >= min and x <= max)
 end
@@ -43,34 +39,12 @@ local function is_node_on_screen(self, pos)
 end
 
 local function set_plane_position(self)
-	local min
-	local max
-	local temp
-	if (self.vertical) then
-		max = - self.object_size.y * 0.5 - self.padding_vertical
-		
-		if (#self.objects == 0) then
-			max = - self.padding_vertical
-			min = max
-		else
-			min = - self.padding_vertical - self.object_size.y * 0.5 - (self.object_size.y + self.between) * (#self.objects - 1)
-		end
-		temp = is_entry(self.position.y, min, max)
-		self.position.y = clamp(self.position.y, min, max)
-	else
-		max = - self.object_size.x * 0.5 - self.padding_horizontal
-		
-		if (#self.objects == 0) then
-		 	max = - self.padding_horizontal
-			min = max
-		else
-			min = - self.padding_horizontal - self.object_size.x * 0.5 - (self.object_size.x + self.between) * (#self.objects - 1)
-		end
-		temp = is_entry(self.position.x, min, max)
-		self.position.x = clamp(self.position.x, min, max)
-	end	
+	if self.vertical then
+		self.position.y = -(((self.value or 1) - 1) * (self.object_size.y + self.between) + (self.value and self.object_size.y * 0.5 or 0) + self.padding_vertical)
+	else	
+		self.position.x = -(((self.value or 1) - 1) * (self.object_size.x + self.between) + (self.value and self.object_size.x * 0.5 or 0) + self.padding_horizontal)
+	end
 	gui.set_position(self.objects_plane, self.position)
-	return temp
 end
 
 
@@ -79,12 +53,14 @@ local function set_value(self)
 		self.value = nil
 		return
 	end
-	
-	if self.vertical then
-		self.value = 1 + (math.abs(self.position.y) - self.object_size.y * 0.5 - self.padding_vertical) / (self.object_size.y + self.between)
-	else	
-		self.value = 1 + (math.abs(self.position.x) - self.object_size.x * 0.5 - self.padding_horizontal) / (self.object_size.x + self.between)
+
+	local temp = nil
+	if (not is_entry(self.value or 1, 1, #self.objects)) then
+		temp = true
 	end
+	
+	self.value = util.clamp(self.value or 1, 1, #self.objects)
+	return temp
 end
 
 
@@ -104,7 +80,7 @@ local function set_plane_size(self)
 	local size = gui.get_size(self.objects_plane)
 	
 	if (self.vertical) then
-		size.y = (self.object_size.y + self.between) * (#self.objects) - ((#self.objects > 0 and self.between) or 0)  + self.padding_vertical * 2
+		size.y = (self.object_size.y + self.between) * (#self.objects) - ((#self.objects > 0 and self.between) or 0) + self.padding_vertical * 2
 	else
 		size.x = (self.object_size.x + self.between) * (#self.objects) - ((#self.objects > 0 and self.between) or 0) + self.padding_horizontal * 2
 	end
@@ -157,9 +133,7 @@ local function update_nodes_visiable(self)
 	if (#self.objects == 0) then
 		return
 	end
-	
 	local i = round(self.value) - 1
-	
 	while (i > 0) do
 		if (update_node(self, i)) then
 			break
@@ -176,13 +150,26 @@ local function update_nodes_visiable(self)
 	end
 end
 
+local function make_nodes_invisiable(self)
+	if (#self.objects == 0) then
+		return
+	end
+	
+	for _, val in ipairs(self.objects) do
+		if (val.clone ~= nil) then
+			add_clone_node(self, val.clone)
+			val.clone = nil
+		end
+	end
+end
+
 
 local function update_plane(self)
 	set_plane_size(self)
-	if (not set_plane_position(self)) then
+	if (set_value(self)) then
 		self:stop()
 	end
-	set_value(self)
+	set_plane_position(self)
 	update_nodes_visiable(self)
 end
 
@@ -204,11 +191,11 @@ function scope.init(id, settings)
 		margin_horizontal = settings.margin_horizontal or 50,
 		margin_vertical = settings.margin_vertical or 50,
 		
-		touch_acceleration = settings.touch_acceleration or 1,
+		touch_acceleration = settings.touch_acceleration or 0.01,
 		max_speed = settings.max_speed,
-		min_speed = settings.min_speed or 10,
-		acceleration_down = settings.acceleration_down or 150,
-		touch_speed_border = settings.touch_speed_border or 5,
+		min_speed = settings.min_speed or 0.1,
+		acceleration_down = settings.acceleration_down or 5,
+		touch_speed_border = settings.touch_speed_border or 3,
 		
 		
 		speed = 0,
@@ -273,16 +260,12 @@ function meta:update(dt, on_change)
 		
 		local temp = self.speed * dt  - self.acceleration_down * sign(self.speed) * dt * dt / 2	
 		
-		if (self.vertical) then
-			self.position.y = self.position.y + temp
-		else
-			self.position.x = self.position.x + temp		
-		end
+		self.value = self.value + temp
 		
-		if (not set_plane_position(self)) then
+		if (set_value(self)) then
 			self:stop()
 		end
-		set_value(self) 
+		set_plane_position(self)
 		
 		
 		self.speed = self.speed - self.acceleration_down * dt * sign(self.speed)	
@@ -299,6 +282,17 @@ function meta:update(dt, on_change)
 	end
 end
 
+function meta:set_position(value)
+	if (#self.objects == 0) then
+		return
+	end
+	self:stop()
+	self.value = value
+	set_value(self)
+	make_nodes_invisiable(self)
+	set_plane_position(self)	
+	update_nodes_visiable(self)
+end
 
 function meta:input(action_id, action)
 	if (action_id == vars.touch) then
@@ -320,7 +314,7 @@ function meta:input(action_id, action)
 		if (self.touched) then
 			if (math.abs(((self.vertical and action.dy) or action.dx)) > self.touch_speed_border) then
 				self.moved = true
-				self.speed = self.speed + ((self.vertical and action.dy) or action.dx) * self.touch_acceleration
+				self.speed = self.speed - ((self.vertical and action.dy) or action.dx) * self.touch_acceleration
 				if (self.max_speed and math.abs(self.speed) > self.max_speed) then
 					self.speed = self.max_speed * sign(self.speed)
 				end
@@ -401,6 +395,18 @@ function meta:remove_all()
 	self.nodes = { }
 	
 	update_plane(self)
+end
+
+function meta:disable()
+	gui.set_enabled(main_plane, false)
+	gui.set_enabled(clip_plane, false)
+	gui.set_enabled(objects_plane, false)
+end
+
+function meta:enable()
+	gui.set_enabled(main_plane, true)
+	gui.set_enabled(clip_plane, true)
+	gui.set_enabled(objects_plane, true)
 end
 
 return scope
