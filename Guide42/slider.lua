@@ -70,10 +70,16 @@ function get_value(value, min, max)
 	return (value -  min) / (max - min)
 end
 
+function size_of_point(self)
+	local temp = gui.get_size(self.point_node)
+	return (self.vertical and temp.y) or temp.x
+end
+
 function meta:set_value(value)
 	value = util.clamp(value, self.min_value, self.max_value)
 	self.value = value
-	local temp = get_value(value, self.min_value, self.max_value) * self.max_size
+	local size = size_of_point(self)/2
+	local temp = get_value(value, self.min_value, self.max_value) * (self.max_size - size * 2) + size
 	if (self.vertical) then
 		self.size.y = temp
 		gui.set_position(self.point_node, vmath.vector3(0, temp, 0))
